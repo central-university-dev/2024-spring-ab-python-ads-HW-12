@@ -12,9 +12,9 @@
 
 ### Критерии
 
-* Обучен `Faiss index` - +1
-* Реализован endpoint для предсказаний - +1
-* Реализованы `KafkaProducer` и `KafkaListener` - +3 (см. [consumer.py](consumer.py) и [producer.py](producer.py))
-* Реализовано хранение эмбеддингов пользователей в `Redis` - +2
-* Полный функционал привязан к фронтенду (см. [streamlit.py](streamlit.py)) - +1
-* Все упаковано в `docker-compose` - +2
+* Обучен `Faiss index` - **+1**
+* Реализован endpoint для предсказаний - **+1**
+* Реализованы `KafkaProducer` и `KafkaListener` (см. [consumer.py](consumer.py) и [producer.py](producer.py)) - **+3**
+* Реализовано хранение эмбеддингов пользователей в `Redis` - **+2**
+* Полный функционал привязан к фронтенду (см. [streamlit.py](streamlit.py)) - **+1**
+* Все упаковано в `docker-compose` - **+2**
