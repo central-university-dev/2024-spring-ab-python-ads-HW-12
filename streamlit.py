@@ -1,23 +1,57 @@
+import streamlit as st
+import requests
 import pandas as pd
 
-import streamlit as st
+st.title('Netflix Recommendation System')
 
-st.title('Netflix RecSys')
+API_URL = "http://localhost:8000"  # Ensure this matches the FastAPI application URL
 
-df = pd.read_csv("netflix_titles.csv").loc[:, ["title"]]
+def fetch_recommendations(user_id: str) -> pd.DataFrame:
+    """
+    Fetch movie recommendations for a given user ID by querying the FastAPI server.
+    
+    Args:
+        user_id (str): The ID of the user for whom to fetch recommendations.
 
-app_mode = st.sidebar.selectbox('Mode', ['Random Films', 'Recommendations'])
+    Returns:
+        pd.DataFrame: Data frame of recommended movie titles.
+    """
+    response = requests.get(f"{API_URL}/recommendations/{user_id}")
+    if response.status_code == 200:
+        recommendations = response.json()['recommendations']
+        df = pd.read_csv("netflix_titles.csv")
+        recommended_titles = df[df.index.isin(recommendations)]['title']
+        return recommended_titles
+    else:
+        st.error('Failed to retrieve recommendations: ' + response.text)
+        return pd.DataFrame()
 
-def onclick():
-    pass
+def log_interaction(user_id: str, movie_id: str, embedding: list):
+    """
+    Log a user's interaction with a movie by sending a POST request to the FastAPI server.
 
-def get_recommended_films():
-    return [392, 1358, 3329]
+    Args:
+        user_id (str): The ID of the user who interacted with the movie.
+        movie_id (str): The ID of the movie interacted with.
+        embedding (list): The embedding vector of the movie.
+    """
+    response = requests.post(f"{API_URL}/interact/{user_id}/{movie_id}", json={"embedding": embedding})
+    if response.status_code == 200:
+        st.success("Interaction logged successfully.")
+    else:
+        st.error("Failed to log interaction: " + response.text)
 
-if app_mode == "Random Films":
-    for _, row in df.sample(100).iterrows():
-        st.button(row["title"], on_click=onclick)
+# User interaction
+user_id_input = st.text_input('Enter your user ID to get recommendations:')
+if user_id_input:
+    recommended_titles = fetch_recommendations(user_id_input)
+    if not recommended_titles.empty:
+        st.subheader('Your Recommendations:')
+        st.table(recommended_titles)
 
-if app_mode == "Recommendations":
-    for film in get_recommended_films():
-        st.button(df.at[film, "title"], on_click=onclick)
+        # Option to log interaction with any of the recommended movies
+        movie_id_input = st.text_input('Enter movie ID to log interaction:')
+        embedding_input = st.text_area('Enter embedding vector:', value='[]')
+        if st.button('Log Interaction'):
+            embedding = eval(embedding_input)
+            log_interaction(user_id_input, movie_id_input, embedding)

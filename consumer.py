@@ -1,18 +1,16 @@
 import json
-
 from kafka import KafkaConsumer
+from river import compose, preprocessing, linear_model, metrics
+import logging
 
-from river import linear_model
-from river import compose
-from river import preprocessing
-from river import metrics
+logging.basicConfig(level=logging.INFO)
 
-metric = metrics.ROCAUC()
-
-model = compose.Pipeline(
+model: compose.Pipeline = compose.Pipeline(
     preprocessing.StandardScaler(),
     linear_model.LogisticRegression()
 )
+
+metric: metrics.ROCAUC = metrics.ROCAUC()
 
 consumer = KafkaConsumer(
     "ml_training_data",
@@ -29,7 +27,7 @@ for event in consumer:
         y = event_data["y"]
         y_pred = model.predict_proba_one(x)
         metric.update(y, y_pred)
-        print(metric)
         model.learn_one(x, y)
-    except:
-        print("Error")
+        logging.info(f"Updated metric: {metric}")
+    except Exception as e:
+        logging.error(f"Error processing event: {e}")
