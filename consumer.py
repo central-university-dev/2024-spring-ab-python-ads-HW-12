@@ -1,35 +1,29 @@
 import json
-
 from kafka import KafkaConsumer
+import numpy as np
+import redis
 
-from river import linear_model
-from river import compose
-from river import preprocessing
-from river import metrics
-
-metric = metrics.ROCAUC()
-
-model = compose.Pipeline(
-    preprocessing.StandardScaler(),
-    linear_model.LogisticRegression()
-)
+r = redis.Redis(host="localhost", port=6379, db=0)
 
 consumer = KafkaConsumer(
     "ml_training_data",
     bootstrap_servers=["localhost:9092"],
     auto_offset_reset="earliest",
     group_id="my_group_id",
-    value_deserializer=lambda x: json.loads(x.decode("utf-8"))
+    value_deserializer=lambda x: json.loads(x.decode("utf-8")),
 )
 
 for event in consumer:
     event_data = event.value
     try:
-        x = event_data["x"]
-        y = event_data["y"]
-        y_pred = model.predict_proba_one(x)
-        metric.update(y, y_pred)
-        print(metric)
-        model.learn_one(x, y)
-    except:
-        print("Error")
+        user_id = event_data["user_id"]
+        movie_embedding = np.array(event_data["embedding"], dtype="float32")
+        existing_embedding = r.get(user_id)
+        if existing_embedding:
+            existing_embedding = np.frombuffer(existing_embedding, dtype="float32")
+            updated_embedding = (existing_embedding + movie_embedding) / 2
+        else:
+            updated_embedding = movie_embedding
+        r.set(user_id, updated_embedding.tobytes())
+    except Exception as e:
+        print(f"Error: {e}")
