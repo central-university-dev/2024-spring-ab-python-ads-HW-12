@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pandas
+numpy
+scikit-learn
+nltk
+faiss-cpu
+kafka-python
+kafka
+packaging
+redis
